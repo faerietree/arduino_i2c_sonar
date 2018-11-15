@@ -1,9 +1,11 @@
 #include <Wire.h>
 
-#define SONAR_PULSE_IN_PIN 5                  // Pulse input pin for sonar if using PWM input signal
-#define SONAR_ANALOG_IN_PIN 0                 // Analog input pin for sonar if using analog signal
+#define SONAR_TRIGGER_PIN 4
+#define SONAR_ECHO_PIN 5
+#define SONAR_PULSE_IN_PIN 5                  // if using analog signal
+#define SONAR_ANALOG_IN_PIN 0                 // if using analog signal
 #define LED_PIN 13                            // Standard LED PIN
-#define I2CSonar_ADDRESS 0x02                 // Arbitary choice
+#define I2CSonar_ADDRESS 0x03                 // Arbitary choice
 #define MIN_RANGE 20                          // Based on specs from MB1200 data sheet
 #define MAX_RANGE 765                         // Based on specs from MB1200 data sheet
 #define US_PER_CM 58                          // 58 microsecs per cm Based on specs from MB1200 data sheet
@@ -44,8 +46,13 @@ void setup()
   pinMode(LED_PIN, OUTPUT);                   // Setup LED pin 
   digitalWrite(LED_PIN, HIGH);                // set the LED on
   filtMode = MODE_MODE;                       // Start in modal filter mode 
-}
 
+  Serial.begin(9600);
+  pinMode(SONAR_TRIGGER_PIN, OUTPUT);
+  pinMode(SONAR_ECHO_PIN, INPUT);
+  delay(1000);
+}
+  
 void loop()
 {
   int tmp=0;
@@ -94,7 +101,8 @@ void loop()
   }
 
   // Get the latest data from Sonar
-  tmp = ReadSonarPulse();
+  //tmp = ReadSonarPulse();
+  tmp = getDistance();
   if (tmp> MAX_RANGE) tmp=MAX_RANGE; 
   if (tmp< MIN_RANGE) tmp=0; 
 
@@ -140,7 +148,7 @@ void loop()
 void requestEvent()
 {
   digitalWrite(13, HIGH);                     // set the LED on to show we are sending data
-  Wire.send(valPtr, 2);                       // Send two bytes starting at a pointer that points to the location of the Sonar data
+  Wire.write(valPtr, 2);                       // Send two bytes starting at a pointer that points to the location of the Sonar data
 }
 
 //---------------------------------------
@@ -148,7 +156,7 @@ void requestEvent()
 void receiveEvent(int numBytes) 
 {
   for (int i=0;i<numBytes;i++)                // only expecting one byte commands in this implementation but just to be sure lets read all of them
-    dataRx = Wire.receive();
+    dataRx = Wire.read();
   cmdReady = true;
 }
 
@@ -217,22 +225,3 @@ int median(int *x,int n){
 
   return (x[(n/2)]);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
